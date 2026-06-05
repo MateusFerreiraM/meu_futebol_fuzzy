@@ -22,7 +22,7 @@ O **Fuzzy Soccer Draft** é um sistema web inteligente, focado em dispositivos m
 
 1. **Clone o repositório:**
 ```bash
-git clone https://github.com/SEU_USUARIO/meu_futebol_fuzzy.git
+git clone https://github.com/MateusFerreiraM/meu_futebol_fuzzy.git
 cd meu_futebol_fuzzy
 ```
 
