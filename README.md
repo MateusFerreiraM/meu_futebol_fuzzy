@@ -42,7 +42,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. **Inicie a Aplicação:**
+4. **Configure o Banco de Dados (Supabase):**
+Crie uma pasta chamada `.streamlit` na raiz do projeto e dentro dela crie um arquivo `secrets.toml` com as suas chaves do Supabase:
+```toml
+SUPABASE_URL = "Sua URL do Supabase"
+SUPABASE_KEY = "Sua chave anon / public"
+```
+*(Certifique-se de ter rodado o script `supabase_schema.sql` no painel do Supabase para criar as tabelas).*
+
+5. **Inicie a Aplicação:**
 ```bash
 streamlit run app.py
 ```
@@ -64,7 +72,7 @@ meu_futebol_fuzzy/
 ├── requirements.txt      # Dependências do Python
 ├── pytest.ini            # Configurações do Pytest
 ├── src/
-│   ├── db_manager.py     # Gestão, CRUD e Conexão com o SQLite
+│   ├── db_manager.py     # Gestão, CRUD e Conexão com o Supabase
 │   ├── fuzzy_engine.py   # Lógica Nebulosa (Notas e Sinergia)
 │   ├── game_logic.py     # Algoritmo de Sorteio Guloso
 │   └── ui_components.py  # Renderização de CSS e Cards customizados
