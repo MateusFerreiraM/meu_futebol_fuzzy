@@ -17,11 +17,8 @@ from src.ui_components import injetar_css_tema, renderizar_card_jogador
 st.set_page_config(page_title="Fuzzy Soccer", page_icon="⚽", layout="wide")
 injetar_css_tema()
 
-# --- INICIALIZAÇÃO ---
-inicializar_banco()
-nomes = ["João", "Marcos", "Pedro", "Lucas", "Mateus", "Tiago", "André", "Felipe", 
-         "Davi", "Bruno", "Carlos", "Daniel", "Eduardo", "Gabriel", "Henrique"]
-popular_banco_inicial(nomes)
+# --- INICIALIZAÇÃO (Via Supabase) ---
+# O banco de dados agora está na nuvem e começa vazio!
 
 if 'admin' not in st.session_state: st.session_state.admin = False
 if 'partida' not in st.session_state:

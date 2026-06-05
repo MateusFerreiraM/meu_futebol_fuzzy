@@ -15,7 +15,7 @@ O **Fuzzy Soccer Draft** é um sistema web inteligente, focado em dispositivos m
 - **Linguagem:** Python 3.10+
 - **Interface Gráfica:** Streamlit (com componentes HTML/CSS customizados)
 - **Matemática e IA:** `scikit-fuzzy`, `numpy`, `pandas`
-- **Banco de Dados:** SQLite (nativo via biblioteca `sqlite3`)
+- **Banco de Dados:** Supabase (PostgreSQL na nuvem)
 - **Testes Unitários:** `pytest`
 
 ## ⚙️ Como Instalar e Rodar
