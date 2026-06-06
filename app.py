@@ -30,7 +30,7 @@ with st.sidebar:
     if not st.session_state.admin:
         pin = st.text_input("PIN do Organizador", type="password")
         if st.button("Entrar", use_container_width=True):
-            if pin == "1234":
+            if pin == st.secrets["ADMIN_PIN"]:
                 st.session_state.admin = True
                 st.rerun()
             else: st.error("PIN incorreto!")
