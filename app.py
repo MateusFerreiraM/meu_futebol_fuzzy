@@ -151,6 +151,39 @@ with aba_partida:
                     st.rerun()
 
         elif p['status'] == 'andamento':
+            def processar_e_encerrar():
+                with st.spinner("⏳ Processando estatísticas na nuvem... Isso pode levar alguns segundos."):
+                    ganhouA = p['placarA'] > p['placarB']
+                    ganhouB = p['placarB'] > p['placarA']
+                    empatou = p['placarA'] == p['placarB']
+
+                    def processar_time(jogadores, ganhou):
+                        for jog_nome in jogadores:
+                            gols = sum(1 for ev in p['eventos'] if ev['autor'] == jog_nome)
+                            assists = sum(1 for ev in p['eventos'] if ev['assist'] == jog_nome)
+                            
+                            impacto = gols + assists
+                            saldo = 1 if ganhou else (0 if empatou else -1)
+                            
+                            delta = calcular_delta_nota(impacto, saldo)
+                            nota_ant = next((j["nota_base"] for j in todos_jogadores if j["nome"] == jog_nome), 3.0)
+                            nova_nota = max(1.0, min(5.0, nota_ant + delta))
+                            
+                            atualizar_estatisticas_jogador(jog_nome, nova_nota, gols, assists, ganhou, empatou)
+                    
+                    processar_time(p['jogadoresA'], ganhouA)
+                    processar_time(p['jogadoresB'], ganhouB)
+                    
+                    if ganhouA: 
+                        atualizar_sinergia(p['jogadoresA'], True)
+                        atualizar_sinergia(p['jogadoresB'], False)
+                    elif ganhouB:
+                        atualizar_sinergia(p['jogadoresB'], True)
+                        atualizar_sinergia(p['jogadoresA'], False)
+                
+                st.session_state.partida['status'] = 'encerrada'
+                st.session_state.partida['processado'] = True
+
             placar_html = f"""
             <div style="display: flex; justify-content: space-around; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
                 <div style="text-align: center; width: 40%;">
@@ -208,48 +241,15 @@ with aba_partida:
                 else: p['placarB'] += 1
                 
                 if p['placarA'] >= p['max_gols'] or p['placarB'] >= p['max_gols']:
-                    st.session_state.partida['status'] = 'encerrada'
-                    st.session_state.partida['processado'] = False
+                    processar_e_encerrar()
                 st.rerun()
 
             st.divider()
             if st.button("🛑 Encerrar Partida Agora", type="secondary", use_container_width=True):
-                st.session_state.partida['status'] = 'encerrada'
-                st.session_state.partida['processado'] = False
+                processar_e_encerrar()
                 st.rerun()
 
         elif p['status'] == 'encerrada':
-            if not p.get('processado', False):
-                ganhouA = p['placarA'] > p['placarB']
-                ganhouB = p['placarB'] > p['placarA']
-                empatou = p['placarA'] == p['placarB']
-
-                def processar_time(jogadores, ganhou):
-                    for jog_nome in jogadores:
-                        gols = sum(1 for ev in p['eventos'] if ev['autor'] == jog_nome)
-                        assists = sum(1 for ev in p['eventos'] if ev['assist'] == jog_nome)
-                        
-                        impacto = gols + assists
-                        saldo = 1 if ganhou else (0 if empatou else -1)
-                        
-                        delta = calcular_delta_nota(impacto, saldo)
-                        nota_ant = next((j["nota_base"] for j in todos_jogadores if j["nome"] == jog_nome), 3.0)
-                        nova_nota = max(1.0, min(5.0, nota_ant + delta))
-                        
-                        atualizar_estatisticas_jogador(jog_nome, nova_nota, gols, assists, ganhou, empatou)
-                
-                processar_time(p['jogadoresA'], ganhouA)
-                processar_time(p['jogadoresB'], ganhouB)
-                
-                if ganhouA: 
-                    atualizar_sinergia(p['jogadoresA'], True)
-                    atualizar_sinergia(p['jogadoresB'], False)
-                elif ganhouB:
-                    atualizar_sinergia(p['jogadoresB'], True)
-                    atualizar_sinergia(p['jogadoresA'], False)
-                
-                p['processado'] = True
-
             st.success("🏁 PARTIDA ENCERRADA E ESTATÍSTICAS SALVAS!")
             
             placar_html = f"""
