@@ -17,14 +17,12 @@ from src.ui_components import injetar_css_tema, renderizar_card_jogador
 st.set_page_config(page_title="Fuzzy Soccer", page_icon="⚽", layout="wide")
 injetar_css_tema()
 
-# --- INICIALIZAÇÃO (Via Supabase) ---
-# O banco de dados agora está na nuvem e começa vazio!
-
+# Inicialização de estado global
 if 'admin' not in st.session_state: st.session_state.admin = False
 if 'partida' not in st.session_state:
     st.session_state.partida = {'status': 'config'}
 
-# --- LOGIN ---
+# Autenticação
 with st.sidebar:
     st.title("🔐 Acesso")
     if not st.session_state.admin:
@@ -49,9 +47,7 @@ aba_sorteio, aba_partida, aba_ranking, aba_gestao, aba_financas = st.tabs([
     "🎲 Sorteio", "⏱️ Partida Ao Vivo", "🏆 Ranking", "⚙️ Gestão", "💰 Finanças"
 ])
 
-# ==========================================
-# 1. ABA DE SORTEIO
-# ==========================================
+# Aba 1: Sorteio Dinâmico
 with aba_sorteio:
     st.header("Organizar Pelada")
     jogadores_hoje = st.multiselect("Quem veio jogar hoje?", nomes_todos, default=nomes_todos[:12])
@@ -79,9 +75,7 @@ with aba_sorteio:
                 for j in time_arr:
                     renderizar_card_jogador(j['nome'], j['nota_base'])
 
-# ==========================================
-# 2. ABA PARTIDA AO VIVO (TEMPO REAL)
-# ==========================================
+# Aba 2: Gestão de Partida e Interface em Tempo Real
 with aba_partida:
     st.header("Painel de Jogo")
     p = st.session_state.partida
@@ -108,14 +102,12 @@ with aba_partida:
             key_A = f"ms_A_{eqA_sel}"
             key_B = f"ms_B_{eqB_sel}"
             
-            # Obtém a escalação atual. Se o usuário ainda não mexeu, usa a default.
             current_A = st.session_state.get(key_A, default_A)
             current_B = st.session_state.get(key_B, default_B)
             
-            # O "Banco" são todos os jogadores que não estão atualmente no Lado A nem no Lado B
+            # Banco de reservas dinâmico
             banco = [n for n in nomes_todos if n not in current_A and n not in current_B]
             
-            # Opções de cada lado = Seus próprios jogadores + Jogadores que estão no Banco
             options_A = current_A + banco
             options_B = current_B + banco
             
@@ -152,6 +144,39 @@ with aba_partida:
 
         elif p['status'] == 'andamento':
             def processar_e_encerrar():
+                st.markdown("""
+                <style>
+                [data-testid="stSpinner"] {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.95);
+                    padding: 30px;
+                    border-radius: 15px;
+                    z-index: 9999;
+                    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+                    border: 2px solid #4CAF50;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 300px;
+                    max-width: 90vw;
+                    text-align: center;
+                }
+                [data-testid="stSpinner"] > div {
+                    margin-bottom: 15px !important;
+                }
+                [data-testid="stSpinner"] p {
+                    font-size: 1.1rem;
+                    color: white;
+                    font-weight: bold;
+                    margin-top: 0;
+                    white-space: normal;
+                }
+                </style>
+                """, unsafe_allow_html=True)
                 with st.spinner("⏳ Processando estatísticas na nuvem... Isso pode levar alguns segundos."):
                     ganhouA = p['placarA'] > p['placarB']
                     ganhouB = p['placarB'] > p['placarA']
@@ -184,29 +209,40 @@ with aba_partida:
                 st.session_state.partida['status'] = 'encerrada'
                 st.session_state.partida['processado'] = True
 
-            placar_html = f"""
-            <div style="display: flex; justify-content: space-around; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-                <div style="text-align: center; width: 40%;">
-                    <div style="font-size: 3rem; font-weight: bold; color: #4CAF50; line-height: 1;">{p['placarA']}</div>
-                    <div style="font-size: 1.2rem; font-weight: bold; color: #fff; margin-top: 5px; text-transform: uppercase;">{p['nomeA']}</div>
-                </div>
-                <div style="font-size: 2.5rem; font-weight: bold; color: #aaaaaa; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">X</div>
-                <div style="text-align: center; width: 40%;">
-                    <div style="font-size: 3rem; font-weight: bold; color: #4CAF50; line-height: 1;">{p['placarB']}</div>
-                    <div style="font-size: 1.2rem; font-weight: bold; color: #fff; margin-top: 5px; text-transform: uppercase;">{p['nomeB']}</div>
-                </div>
-            </div>
-            """
-            st.markdown(placar_html, unsafe_allow_html=True)
-            
-            st.divider()
-            
             inicio_js = p['inicio'] * 1000
             duracao_js = p['max_minutos'] * 60 * 1000
             
-            html_timer = f"""
-            <div id="timer" style="font-size:3rem; font-weight:bold; text-align:center; font-family:'Inter', sans-serif; color:#ffffff; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px;"></div>
+            html_placar_cronometro = f"""
+            <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+            body {{ font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: transparent; color: white; overflow: hidden; }}
+            .container {{
+                background: rgba(255,255,255,0.05); padding: 20px 10px; border-radius: 15px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center;
+            }}
+            .teams {{ display: flex; justify-content: space-around; align-items: center; width: 100%; }}
+            .team {{ text-align: center; width: 40%; }}
+            .score {{ font-size: 3.5rem; font-weight: bold; color: #4CAF50; line-height: 1; }}
+            .name {{ font-size: 1.2rem; font-weight: bold; margin-top: 5px; text-transform: uppercase; }}
+            .vs {{ font-size: 2.5rem; font-weight: bold; color: #aaaaaa; }}
+            #timer {{ font-size: 2.5rem; font-weight: bold; text-align: center; color: #ffeb3b; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 5px 30px; margin-top: 20px; }}
+            </style>
+            <div class="container">
+                <div class="teams">
+                    <div class="team">
+                        <div class="score">{p['placarA']}</div>
+                        <div class="name">{p['nomeA']}</div>
+                    </div>
+                    <div class="vs">X</div>
+                    <div class="team">
+                        <div class="score">{p['placarB']}</div>
+                        <div class="name">{p['nomeB']}</div>
+                    </div>
+                </div>
+                <div id="timer">00:00</div>
+            </div>
             <script>
+            window.parent.scrollTo(0, 0);
             var start = {inicio_js};
             var duration = {duracao_js};
             var timer = setInterval(function() {{
@@ -217,7 +253,7 @@ with aba_partida:
                 if (rem <= 0) {{ 
                     clearInterval(timer); 
                     document.getElementById("timer").innerHTML = "00:00"; 
-                    document.getElementById("timer").style.color = "red"; 
+                    document.getElementById("timer").style.color = "#f44336"; 
                 }} else {{
                     var m = Math.floor(rem / 60); 
                     var s = rem % 60;
@@ -226,7 +262,7 @@ with aba_partida:
             }}, 500);
             </script>
             """
-            components.html(html_timer, height=120)
+            components.html(html_placar_cronometro, height=230)
 
             st.subheader("⚽ Lançar Golo")
             cg1, cg2, cg3 = st.columns(3)
@@ -285,15 +321,12 @@ with aba_partida:
                 st.session_state.partida = {'status': 'config'}
                 st.rerun()
 
-# ==========================================
-# 3. ABA RANKING
-# ==========================================
+# Aba 3: Classificação
 with aba_ranking:
     st.header("🏆 Tabela de Classificação")
     df = pd.DataFrame(todos_jogadores)
     if not df.empty:
         df = df[['nome', 'nota_base', 'vitorias', 'derrotas', 'gols', 'assistencias']]
-        # Arredondar a nota e encurtar nomes das colunas
         df['nota_base'] = df['nota_base'].round(1)
         df = df.rename(columns={
             'nome': 'Jogador',
@@ -317,9 +350,7 @@ with aba_ranking:
         time.sleep(1)
         st.rerun()
 
-# ==========================================
-# 4. ABA GESTÃO JOGADORES (CRUD)
-# ==========================================
+# Aba 4: Gestão de Jogadores (CRUD)
 with aba_gestao:
     st.header("⚙️ Gestão de Jogadores")
     if not st.session_state.admin:
@@ -360,9 +391,7 @@ with aba_gestao:
                     time.sleep(1)
                     st.rerun()
 
-# ==========================================
-# 5. ABA MENSALIDADES
-# ==========================================
+# Aba 5: Controle Financeiro
 with aba_financas:
     st.header("💰 Gestão Financeira")
     mes_atual = datetime.now().month
